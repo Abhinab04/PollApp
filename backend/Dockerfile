@@ -1,29 +1,22 @@
-# Build frontend
-FROM node:18-alpine AS frontend-build
-
-WORKDIR /app/frontend
-
-COPY frontend/package*.json ./
-
-RUN npm ci
-
-COPY frontend/ .
-
-RUN npm run build
-
-# Build backend
 FROM node:18-alpine
 
-WORKDIR /app/backend
+# Set working directory inside the container
+WORKDIR /app
 
-COPY backend/package*.json ./
+# Set production environment
+ENV NODE_ENV=production
 
+# Install only production dependencies
+COPY package*.json ./
 RUN npm ci --only=production
 
-COPY backend/ .
+# Copy application sources
+COPY . .
 
-# Copy frontend build from previous stage
-COPY --from=frontend-build /app/frontend/build ../frontend/build
+# Create unprivileged user to run the app
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 5000
 
